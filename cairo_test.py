@@ -185,6 +185,7 @@ class MyApp(Gtk.Window):
     # end draw_hex_at_center()
     
     def draw_value(self, cairo_context, value, center_x, center_y):
+        cairo_context.set_font_size(18)
         cairo_context.move_to(center_x, center_y)
         cairo_context.text_path(str(value))
     # end draw_value()
