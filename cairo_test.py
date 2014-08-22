@@ -5,10 +5,34 @@ import math
 
 clicks = [];
 
+class CellType:
+    WHEAT   = 0
+    FOREST  = 1
+    ROCK    = 2
+    SHEEP   = 3
+    BRICK   = 4
+    DESERT  = 5
+    SEA     = 6
+# end class CellType
+
+class HexCell:
+    def __init__(self, x, y):
+        self.x     = x
+        self.y     = y
+        self.value = 0
+        self.type  = CellType.SEA
+    # end __init__()
+    
+    def SetValue(self, value):
+        self.value = value
+        print('%d,%d = %d' % (self.x, self.y, self.value))
+    # end SetValue()
+# end class HexCell
+
 class MyApp(Gtk.Window):
     HEX_EDGE_LEN = 50
     HEX_HEIGHT   = 20
-    HEX_WIDTH    = 20
+    HEX_WIDTH    = 2
     # HEX_CENTER_X = -1 * (HEX_HEIGHT + 1) * HEX_EDGE_LEN
     # HEX_CENTER_Y = HEX_EDGE_LEN
     HEX_CENTER_X = 0
@@ -62,20 +86,61 @@ class MyApp(Gtk.Window):
         self.drawing_area.show()
         self.add(self.drawing_area)
 
-        self.latest_clickloc = (0,0)   
+        self.current_loc = (0,0)   
 
         self.connect('key_release_event', self.on_key_press_event)     
+    
+        self.HexGrid = list()
+
+        for ix in range(0, self.HEX_WIDTH):
+            hex_line = list()
+            for iy in range(0, self.HEX_HEIGHT):
+                hex_line.append(HexCell(ix, iy))
+            # end for
+            
+            self.HexGrid.append(hex_line)
+        # end for
 
         self.show_all()
     # end __init__()
     
+    def IsNumber(self, keyval):
+        is_number = keyval in [self.KEY_2, self.KEY_3, self.KEY_4, self.KEY_5, self.KEY_6, self.KEY_7, self.KEY_8, self.KEY_9, self.KEY_A, self.KEY_B, self.KEY_C, self.KEY_2_ALT, self.KEY_3_ALT, self.KEY_4_ALT, self.KEY_5_ALT, self.KEY_6_ALT, self.KEY_7_ALT, self.KEY_8_ALT, self.KEY_9_ALT] 
+        # print('is_number ', is_number)
+        return (is_number)
+    # end IsNumber()
+    
+    def UnicodeToVal(self, keyval):
+        if (keyval >= self.KEY_2) and (keyval <= self.KEY_9):
+            return (2 + keyval - self.KEY_2)
+        elif (keyval >= self.KEY_A) and (keyval <= self.KEY_C):
+            return (10 + keyval - self.KEY_A)
+        elif (keyval >= self.KEY_2_ALT) and (keyval <= self.KEY_9_ALT):
+            return (2 + keyval - self.KEY_2_ALT)
+        # end if
+    # end UnicodeToVal()
+    
     def process_key(self, keyval):
-        pass
+        if (keyval == self.KEY_LEFT):
+            self.current_loc = (self.current_loc[0] - 1 , self.current_loc[1]) 
+        elif (keyval == self.KEY_UP):
+            self.current_loc = (self.current_loc[0], self.current_loc[1] - 1)
+        elif (keyval == self.KEY_RIGHT):
+            self.current_loc = (self.current_loc[0] + 1 , self.current_loc[1])  
+        elif (keyval == self.KEY_DOWN):
+            self.current_loc = (self.current_loc[0], self.current_loc[1] + 1)
+        elif (self.IsNumber(keyval)):
+            value = self.UnicodeToVal(keyval)
+            # print('value ', value)
+            self.HexGrid[self.current_loc[0]][self.current_loc[1]].SetValue(value)
+        # end if
+        
+        self.drawing_area.queue_draw()
     # end process_key()
 
     def on_key_press_event(self, widget, event):
         if (event.keyval in self.KEY_LIST):
-            print('on_key_press_event %d' % event.keyval)
+            # print('on_key_press_event %d' % event.keyval)
             self.process_key(event.keyval)
         # end if
     # end on_key_press_event()
@@ -92,7 +157,7 @@ class MyApp(Gtk.Window):
         # print("Mouse clicked... at ", event.x, ", ", event.y)
         # print("HexCell...       at ", q, ", ", r)
 
-        # self.latest_clickloc = (r,q)
+        # self.current_loc = (r,q)
 
         # self.drawing_area.queue_draw()
 
@@ -118,20 +183,28 @@ class MyApp(Gtk.Window):
             previous_point = (x_i, y_i)
         # end for
     # end draw_hex_at_center()
+    
+    def draw_value(self, cairo_context, value, center_x, center_y):
+        cairo_context.move_to(center_x, center_y)
+        cairo_context.text_path(str(value))
+    # end draw_value()
 
     def on_drawing_area_draw(self, drawing_area, cairo_context):
         # print('#' * 80)
         previous_point = (self.HEX_CENTER_X, self.HEX_CENTER_Y)
 
-        for ix in range(0, self.HEX_WIDTH):
-            for iy in range(0, self.HEX_HEIGHT):
-                center_x = self.HEX_CENTER_X + 3 * (self.HEX_EDGE_LEN * ix + self.HEX_EDGE_LEN * iy / 2)
-                center_y = self.HEX_CENTER_Y + math.sqrt(3.0) * self.HEX_EDGE_LEN * iy / 2.0
+        for row in self.HexGrid:
+            for cell in row:
+                center_x = self.HEX_CENTER_X + 3 * (self.HEX_EDGE_LEN * cell.x + self.HEX_EDGE_LEN * cell.y / 2)
+                center_y = self.HEX_CENTER_Y + math.sqrt(3.0) * self.HEX_EDGE_LEN * cell.y / 2.0
 
-                if (ix is int(self.latest_clickloc[0])) and (iy is int(self.latest_clickloc[1])):
+                if (cell.x is int(self.current_loc[0])) and (cell.y is int(self.current_loc[1])):
                     self.draw_hex_at_center(cairo_context, center_x, center_y, self.HEX_EDGE_LEN/2)
                 # end if
+                
                 self.draw_hex_at_center(cairo_context, center_x, center_y, self.HEX_EDGE_LEN)
+                
+                self.draw_value(cairo_context, cell.value, center_x, center_y)
             # end for
         # end for
 
