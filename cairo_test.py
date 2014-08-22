@@ -2,6 +2,7 @@
 
 from gi.repository import Gtk, Gdk, cairo
 import math
+import pickle
 
 clicks = [];
 
@@ -83,7 +84,8 @@ class MyApp(Gtk.Window):
     KEY_T     = ord(u't')
     KEY_Y     = ord(u'y')
     KEY_U     = ord(u'u')  
-    KEY_S     = ord(u'S')  
+    KEY_S     = ord(u'S')
+    KEY_L     = ord(u'L')  
       
     
     KEY_2_ALT = 65456 + 2
@@ -95,7 +97,21 @@ class MyApp(Gtk.Window):
     KEY_8_ALT = 65456 + 8
     KEY_9_ALT = 65456 + 9
     
-    KEY_LIST = [KEY_LEFT, KEY_UP, KEY_RIGHT, KEY_DOWN, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_A, KEY_B, KEY_C, KEY_2_ALT, KEY_3_ALT, KEY_4_ALT, KEY_5_ALT, KEY_6_ALT, KEY_7_ALT, KEY_8_ALT, KEY_9_ALT, KEY_Q, KEY_W, KEY_E, KEY_R, KEY_T, KEY_Y, KEY_U, KEY_S]
+    ROLL = [0,
+            0,
+            1.0/36.0,
+            1.0/18.0,
+            1.0/12.0,
+            1.0/9.0,
+            5.0/36.0,
+            1.0/6.0,
+            5.0/36.0,
+            1.0/9.0,
+            1.0/12.0,
+            1.0/18.0,
+            1.0/36.0,]
+    
+    KEY_LIST = [KEY_LEFT, KEY_UP, KEY_RIGHT, KEY_DOWN, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_A, KEY_B, KEY_C, KEY_2_ALT, KEY_3_ALT, KEY_4_ALT, KEY_5_ALT, KEY_6_ALT, KEY_7_ALT, KEY_8_ALT, KEY_9_ALT, KEY_Q, KEY_W, KEY_E, KEY_R, KEY_T, KEY_Y, KEY_U, KEY_S, KEY_L]
     
     def __init__(self):
         Gtk.Window.__init__(self, title="Draw on button press")
@@ -128,7 +144,12 @@ class MyApp(Gtk.Window):
     # end __init__()
     
     def Save(self):
-        pass
+        pickle.dump(self.HexGrid, open('hexgrid.bin', 'wb'))
+    # end Save()
+    
+    def Load(self):
+        self.HexGrid = pickle.load(open('hexgrid.bin', 'rb'))
+        self.drawing_area.queue_draw()
     # end Save()
     
     def IsNumber(self, keyval):
@@ -175,6 +196,8 @@ class MyApp(Gtk.Window):
             self.HexGrid[self.current_loc[0]][self.current_loc[1]].SetTerrain(CellType.SEA)
         elif (keyval == self.KEY_S):
             self.Save()
+        elif (keyval == self.KEY_L):
+            self.Load()
         # end if
         
         self.drawing_area.queue_draw()
